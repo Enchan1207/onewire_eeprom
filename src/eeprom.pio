@@ -1,0 +1,51 @@
+.program picoPioBlink
+.wrap_target
+    ; FIFOからOSRに読み込み
+    pull block
+
+    ; Xレジスタにループ回数を代入
+    set x, 8
+
+; 処理開始
+send_loop:
+    ; yレジスタにOSRをシフトイン
+    out y, 1
+
+    ; ピンを出力に
+    set pindirs 1
+    
+    ; 一定時間ピンをLにする
+    jmp !y set_zero
+
+set_one:
+    set y 27
+    set pins 0 [5]
+    jmp restore_pin
+
+set_zero:
+    set y 19
+    set pins 0 [20]
+
+restore_pin:
+    set pindirs 0 ; 入力に戻す
+
+wait_for_tbit:
+    jmp y-- wait_for_tbit [2] ; y=0になるまでループ
+
+    jmp x-- send_loop
+.wrap
+
+
+% c-sdk {
+void picoPioBlink_program_init(PIO pio, uint sm, uint offset, uint pin) {
+
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    pio_sm_config c = picoPioBlink_program_get_default_config(offset);
+    sm_config_set_set_pins(&c, pin, 1);
+    sm_config_set_clkdiv(&c, 1250);
+
+    pio_sm_init(pio, sm, offset, &c);
+}
+%}
