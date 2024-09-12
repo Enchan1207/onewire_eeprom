@@ -20,6 +20,9 @@ int main() {
     // PIOアセンブリで定義した関数
     picoPioBlink_program_init(pio, statemachineId, offset, IO_PIN);
     pio_sm_set_enabled(pio, statemachineId, true);
+
+    // スタックに積んだ瞬間に動き出す
+    sleep_ms(100);
     pio_sm_put_blocking(pio, statemachineId, 0x005A);
 
     while (true) {

@@ -1,38 +1,27 @@
 .program picoPioBlink
+    set pindirs, 1
+    set pins, 1
+    pull
 .wrap_target
-    ; FIFOからOSRに読み込み
-    pull block
+    set pins, 0 [5]     ; ここで1cycleかけてLにして5cycle待機
+    set pindirs, 0      ; ここで1cycleかけて元に戻る?
+    ;set pins, 1      ; ここで1cycleかけて元に戻る?
+    nop [10]            ; ここで1cycleかけてnopして10cycle待つ
+    set pindirs, 1      ; ここで1cycle
+    ; 合計 1 + 5 + 1 + 1 + 10 + 1 = 19cycle
+    ; これでなんでアサート時間が7cycleになるんですか！！？！？！？
 
-    ; Xレジスタにループ回数を代入
-    set x, 8
+    ; set pins で 0 -> 1 すると60us = 6cycle,
+    ; set pins で 0, set pindirs で 1 すると70us = 7cycle
 
-; 処理開始
-send_loop:
-    ; yレジスタにOSRをシフトイン
-    out y, 1
+    ; これもしかしてDDRいじるのとDRいじるのとでタイミング違います?
+    ; pinsいじる時は「命令実行が始まった時点でI/Oが変わる」
+    ; pindirsいじる時は「命令実行が終わった時点でI/Oが変わる」
 
-    ; ピンを出力に
-    set pindirs 1
-    
-    ; 一定時間ピンをLにする
-    jmp !y set_zero
-
-set_one:
-    set y 27
-    set pins 0 [5]
-    jmp restore_pin
-
-set_zero:
-    set y 19
-    set pins 0 [20]
-
-restore_pin:
-    set pindirs 0 ; 入力に戻す
-
-wait_for_tbit:
-    jmp y-- wait_for_tbit [2] ; y=0になるまでループ
-
-    jmp x-- send_loop
+    ; って考えると
+    ; pinsでアサートしてpinsでネゲートすると、1 + 5 = 6cycle
+    ; pindirsでアサートしてpindirsでネゲートすると、1 + 5 + 1 = 7cycle
+    ; ってことか?
 .wrap
 
 
