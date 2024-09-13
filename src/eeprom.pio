@@ -1,39 +1,60 @@
-.program picoPioBlink
-    set pindirs, 1
-    set pins, 1
-    pull
+.program singlewireComm
 .wrap_target
-    set pins, 0 [5]     ; ここで1cycleかけてLにして5cycle待機
-    set pindirs, 0      ; ここで1cycleかけて元に戻る?
-    ;set pins, 1      ; ここで1cycleかけて元に戻る?
-    nop [10]            ; ここで1cycleかけてnopして10cycle待つ
-    set pindirs, 1      ; ここで1cycle
-    ; 合計 1 + 5 + 1 + 1 + 10 + 1 = 19cycle
-    ; これでなんでアサート時間が7cycleになるんですか！！？！？！？
+    ; FIFOからOSRに読み込み
+    pull block
 
-    ; set pins で 0 -> 1 すると60us = 6cycle,
-    ; set pins で 0, set pindirs で 1 すると70us = 7cycle
+    ; 24bit捨て、最下位1byteからシフトインするようにしておく
+    out null, 24
 
-    ; これもしかしてDDRいじるのとDRいじるのとでタイミング違います?
-    ; pinsいじる時は「命令実行が始まった時点でI/Oが変わる」
-    ; pindirsいじる時は「命令実行が終わった時点でI/Oが変わる」
+    ; Xレジスタにループ回数を代入
+    set x, 7
 
-    ; って考えると
-    ; pinsでアサートしてpinsでネゲートすると、1 + 5 = 6cycle
-    ; pindirsでアサートしてpindirsでネゲートすると、1 + 5 + 1 = 7cycle
-    ; ってことか?
+; 処理開始
+send_loop:
+    ; yレジスタにOSRをシフトイン
+    out y, 1
+
+    ; ピンを出力に
+    set pindirs 1
+    
+    ; 一定時間ピンをLにする
+    jmp !y set_zero
+
+; t_bitは20us程度にしたい、41分周で合計67cycle
+
+; 論理「1」出力 4cy + 63cy
+set_one:
+    set y 30
+    ; ここで1us待ちたい、4*0.3=1.2より、4cy待つ
+    set pins 0
+    set pindirs 0 ; 入力に戻す 実はここでHに戻るまで4cy遅延する
+    jmp wait_for_tbit
+
+; 論理「0」出力 23cy + 44cy
+set_zero:
+    set y 21
+    ; ここで7us待ちたい, 41分周なので0.3s/cy 7/0.3==23.3より、24cy待つ
+    set pins 0 [19]
+    set pindirs 0 ; 入力に戻す 実はここでHに戻るまで4cy遅延する
+
+; (yレジスタの値 + 1) * 2 cy待つ
+wait_for_tbit:
+    jmp y-- wait_for_tbit [1]
+
+; ループ回数をデクリメントして戻る
+    jmp x-- send_loop
 .wrap
 
-
 % c-sdk {
-void picoPioBlink_program_init(PIO pio, uint sm, uint offset, uint pin) {
+void singlewireComm_program_init(PIO pio, uint sm, uint offset, uint pin) {
 
     pio_gpio_init(pio, pin);
-    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, false);
 
-    pio_sm_config c = picoPioBlink_program_get_default_config(offset);
+    pio_sm_config c = singlewireComm_program_get_default_config(offset);
+    sm_config_set_out_shift(&c, false, false, 32); // 左シフトで入れる
     sm_config_set_set_pins(&c, pin, 1);
-    sm_config_set_clkdiv(&c, 1250);
+    sm_config_set_clkdiv(&c, 41); // 41分周 = 3.048MHz
 
     pio_sm_init(pio, sm, offset, &c);
 }

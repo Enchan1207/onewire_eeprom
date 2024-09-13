@@ -15,15 +15,14 @@ int main() {
     const uint statemachineId = 0;
 
     PIO pio = pio0;
-    uint offset = pio_add_program(pio, &picoPioBlink_program);
+    uint offset = pio_add_program(pio, &singlewireComm_program);
 
     // PIOアセンブリで定義した関数
-    picoPioBlink_program_init(pio, statemachineId, offset, IO_PIN);
+    singlewireComm_program_init(pio, statemachineId, offset, IO_PIN);
     pio_sm_set_enabled(pio, statemachineId, true);
 
     // スタックに積んだ瞬間に動き出す
-    sleep_ms(100);
-    pio_sm_put_blocking(pio, statemachineId, 0x005A);
+    pio_sm_put_blocking(pio, statemachineId, 0x5A);
 
     while (true) {
         sleep_ms(1000);
