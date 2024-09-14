@@ -29,7 +29,7 @@ bool send(PIO, uint, uint8_t);
 /**
  * @brief デバイスからレスポンスを受信する
  */
-void receive(PIO, uint, uint8_t*);
+void receive(PIO, uint, uint8_t*, bool);
 
 /**
  * @brief デバイスを検索する
@@ -70,10 +70,9 @@ int main() {
     uint32_t makerId = 0x00000000;
     for (size_t i = 0; i < 3; i++) {
         uint8_t data = 0x00;
-        receive(pio, statemachineId, &data);
+        receive(pio, statemachineId, &data, i < 2);
         makerId |= data << ((2 - i) * 8);
     }
-    // TODO: 本当はここでNACKしないといけない！
 
     sleep_us(150);  // t_htss
 
@@ -95,8 +94,9 @@ bool send(PIO pio, uint statemachineId, uint8_t command) {
     return (result & 0x01) == 0;
 }
 
-void receive(PIO pio, uint statemachineId, uint8_t* data) {
-    pio_sm_put_blocking(pio, statemachineId, 0x00FFFFFF);
+// TODO: arrayを受け取るようにしても良いか
+void receive(PIO pio, uint statemachineId, uint8_t* data, bool sendAck) {
+    pio_sm_put_blocking(pio, statemachineId, sendAck ? 0x000002FF : 0x000001FF);
     uint32_t result = pio_sm_get_blocking(pio, statemachineId);
     *data = result & 0xFF;
 }

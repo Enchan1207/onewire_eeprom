@@ -4,7 +4,8 @@
 ;
 ; FFxxxxxx: EEPROMリセット
 ; 00xxxxNN: NNh書き込み
-; 00FFFFFF: 読み込み
+; 000002FF: 読み込み (ACK送信)
+; 000001FF: 読み込み (NACK送信)
 
 .wrap_target
 ready:
@@ -25,24 +26,30 @@ ready:
 
         ; Lに落とす
         set pins 0
-        jmp y-- skip_wait
+        jmp y-- skip_t_low_0_wait
         nop [18] ; ここで t_low0 を稼ぐ
-        skip_wait:
+        skip_t_low_0_wait:
             set pindirs 0
-        
+
         ; ISRに代入
         in pins, 1 [28] ; ここで t_rcv を稼ぐ
 
         set pindirs 1
         jmp !osre comm_loop
 
-    ; 書き込みモードならACKを確認
+    ; 読み込みモードならACKかNACKを出力する、書き込みモードならACKを確認する
     set pins 0
-    jmp !x read_ack
+    jmp x-- write_ack_or_nack
+    jmp read_ack
 
-    ; 読み込みモードならACKを出力し、入力にpushして最初に戻る
-    set pins 0 [18]
-    set pindirs 0
+    ; xが0ならNACK, 1ならACKを出力する
+    write_ack_or_nack:
+        jmp !x skip_nack_wait
+        nop [18] ; ここで t_low0 を稼ぐ
+        skip_nack_wait:
+            set pindirs 0
+
+    ; ISRをFIFOにpushして最初に戻る
     push noblock
     jmp ready
 
