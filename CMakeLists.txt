@@ -3,9 +3,9 @@
 #
 # reference: https://github.com/raspberrypi/pico-examples/blob/master/CMakeLists.txt
 #
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.21)
 
-## load pico-sdk
+# # load pico-sdk
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 project(pico_project_example
@@ -25,7 +25,8 @@ add_compile_options(
     -Wno-format
     -Wno-unused-function
 )
-if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-maybe-uninitialized)
 endif()
 

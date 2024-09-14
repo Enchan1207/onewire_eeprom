@@ -1,4 +1,4 @@
-.program singlewireComm
+.program eeprom
 
 ; インストラクション数削減のため、スタックにpushする値と操作とを規定する
 ;
@@ -83,14 +83,14 @@ read_ack:
 .wrap
 
 % c-sdk {
-void singlewireComm_program_init(PIO pio, uint sm, uint offset, uint pin) {
+void eeprom_program_init(PIO pio, uint sm, uint offset, uint pin) {
 
     pio_gpio_init(pio, pin);
 
     // 初期状態では入力にしておく
     pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, false);
 
-    pio_sm_config c = singlewireComm_program_get_default_config(offset);
+    pio_sm_config c = eeprom_program_get_default_config(offset);
 
     // 左シフトで入れる
     sm_config_set_in_shift(&c, false, false, 32);
