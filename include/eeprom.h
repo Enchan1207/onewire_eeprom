@@ -50,6 +50,17 @@ bool eepromSend(const EEPROM* eeprom, uint8_t command);
 void eepromReceive(const EEPROM* eeprom, uint8_t* data, bool keepAlive);
 
 /**
+ * @brief EEPROMデバイスから複数バイトの応答を受信する
+ *
+ * @param eeprom
+ * @param data
+ * @param length 受け取るデータの長さ
+ *
+ * @note 格納先(`data`)には長さ(`length`)分以上の領域が確保されていることを前提とします。
+ */
+void eepromReceiveArray(const EEPROM* eeprom, uint8_t* data, uint8_t length);
+
+/**
  * @brief EEPROMデバイスを検索する
  *
  * @param eeprom

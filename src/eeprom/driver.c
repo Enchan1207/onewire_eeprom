@@ -32,6 +32,12 @@ void eepromReceive(const EEPROM* eeprom, uint8_t* data, bool keepAlive) {
     *data = result & 0xFF;
 }
 
+void eepromReceiveArray(const EEPROM* eeprom, uint8_t* data, uint8_t length) {
+    for (size_t i = 0; i < length; i++) {
+        eepromReceive(eeprom, data + i, i < (length - 1));
+    }
+}
+
 int eepromSearchDevice(const EEPROM* eeprom) {
     int deviceAddress = -1;
     for (size_t i = 0; i < 8; i++) {
