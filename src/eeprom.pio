@@ -1,67 +1,62 @@
 .program singlewireComm
+
+; インストラクション数削減のため、スタックにpushする値と操作とを規定する
+;
+; FFxxxxxx: EEPROMリセット
+; 00xxxxNN: NNh書き込み
+; 00FFFFFF: 読み込み
+
+.wrap_target
 ready:
-    ; FIFOからOSRに読み込み
     pull block
 
-    ; ピンを出力に
     set pindirs 1
 
-    ; 下位1byte以外に値が入っている場合はリセットとみなし、飛ぶ
-    out x, 24
+    ; 最上位バイトに値が入っている場合はリセットルーチンへ
+    out x, 8
     jmp x-- eeprom_reset
 
-    ; そうでなければXレジスタにループ回数を代入して書き込み開始
-    set x, 7
+    ; 次の2バイトに値が入っている場合は読み出しモードとみなす(ここでは何もしない)
+    out x, 16
 
-; 処理開始
-send_loop:
-    ; yレジスタにOSRをシフトイン
-    out y, 1
-    
-    ; 一定時間ピンをLにする
-    jmp !y set_zero
+    ; 通信ループ OSRが空になるまで繰り返す
+    comm_loop:
+        out y, 1
 
-; t_bitは20us程度にしたい、41分周で合計67cycle
+        ; Lに落とす
+        set pins 0
+        jmp y-- skip_wait
+        nop [18] ; ここで t_low0 を稼ぐ
+        skip_wait:
+            set pindirs 0
+        
+        ; ISRに代入
+        in pins, 1 [28] ; ここで t_rcv を稼ぐ
 
-; 論理「1」出力 4cy + 63cy
-set_one:
-    set y 30
-    ; ここで1us待ちたい、4*0.3=1.2より、4cy待つ
+        set pindirs 1
+        jmp !osre comm_loop
+
+    ; 書き込みモードならACKを確認
     set pins 0
-    set pindirs 0 ; 入力に戻す 実はここでHに戻るまで4cy遅延する
-    jmp wait_for_tbit
+    jmp !x read_ack
 
-; 論理「0」出力 23cy + 44cy
-set_zero:
-    set y 21
-    ; ここで7us待ちたい, 41分周なので0.3s/cy 7/0.3==23.3より、24cy待つ
-    set pins 0 [19]
-    set pindirs 0 ; 入力に戻す 実はここでHに戻るまで4cy遅延する
-
-; (yレジスタの値 + 1) * 2 cy待つ
-wait_for_tbit:
-    jmp y-- wait_for_tbit [1]
-
-; ループ回数をデクリメントして戻る
-    set pindirs 1
-    jmp x-- send_loop
-
-; ACK/NACKを読む
-    set pins 0
-    jmp read_and_push_input
+    ; 読み込みモードならACKを出力し、入力にpushして最初に戻る
+    set pins 0 [18]
+    set pindirs 0
+    push noblock
+    jmp ready
 
 ; リセットシーケンスを送るサブルーチン
 eeprom_reset:
-    ; Lにして96us待機->INにして10us待機->Lにして1~2us待機->Lが帰れば成功
-    ; Lにして291cy待機->INにして30cy待機->Lにして4cy待機->Lが帰れば成功
+    ; リセットシーケンス:
+    ; Lにして96us待機 -> INにして10us待機 -> Lにして1~2us待機 -> Lが返れば成功
 
-    ; Lにセットし
     set pins 0
 
     ; t_reset待機 ((9 + 1) * (31 + 1) = 10 * 32 = 320cy = 96us以上)
     set x, 9
-wait_for_t_reset:
-    jmp x-- wait_for_t_reset [31]
+    wait_for_t_reset:
+        jmp x-- wait_for_t_reset [31]
 
     ; INに戻してt_rrt待機 (32cy, 10.49us以上)
     set pindirs 0 [31]
@@ -71,12 +66,14 @@ wait_for_t_reset:
     set pins 0 [3]
     set x, 0
 
-; 入力を読んでスタックに返すルーチン
-read_and_push_input:
+    ; *fallthrough
+
+; ACKを確認するサブルーチン
+read_ack:
     set pindirs 0
     in pins, 1
     push noblock
-    jmp ready
+.wrap
 
 % c-sdk {
 void singlewireComm_program_init(PIO pio, uint sm, uint offset, uint pin) {
@@ -98,9 +95,9 @@ void singlewireComm_program_init(PIO pio, uint sm, uint offset, uint pin) {
     // inで取り込むピンのベースを設定
     sm_config_set_in_pins(&c, pin);
 
-    // クロック設定 41分周 = 3.048MHz
-    sm_config_set_clkdiv(&c, 41);
-    // sm_config_set_clkdiv(&c, 1250); // for debug
+    // クロック設定
+    sm_config_set_clkdiv(&c, 34);       // 3.67MHz
+    // sm_config_set_clkdiv(&c, 1250);  // 100kHz(10us/cycle), for debug
 
     pio_sm_init(pio, sm, offset, &c);
 }

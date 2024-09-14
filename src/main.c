@@ -24,7 +24,12 @@ bool resetDevice(PIO, uint);
  *
  * @return ACK
  */
-bool sendCommand(PIO, uint, uint8_t);
+bool send(PIO, uint, uint8_t);
+
+/**
+ * @brief デバイスからレスポンスを受信する
+ */
+void receive(PIO, uint, uint8_t*);
 
 /**
  * @brief デバイスを検索する
@@ -45,22 +50,35 @@ int main() {
     pio_sm_set_enabled(pio, statemachineId, true);
 
     // リセット要求を送り、結果を待つ
-    bool resetResult = resetDevice(pio, statemachineId);
-    if (!resetResult) {
+    bool isReset = resetDevice(pio, statemachineId);
+    printf("Device reset result: %s\n", isReset ? "Success" : "Failure");
+    if (!isReset) {
         printf("Failed to reset device.\n");
         return 1;
     }
-    printf("EEPROM Reset successfully.\n");
 
-    // 接続されているデバイスを検索
-    printf("Looking for connected devices...\n");
-    int deviceAddress = searchDevice(pio, statemachineId);
-    if (deviceAddress < 0) {
-        printf("No device found\n");
+    sleep_us(150);  // t_htss
+
+    // チップ情報を取得するコマンドを送信
+    bool result = send(pio, statemachineId, 0xC1);
+    if (!result) {
+        printf("Failed to send command.\n");
         return 1;
     }
-    printf("Device found at address %d.\n", deviceAddress);
 
+    // 3byteのメーカコードを受信
+    uint32_t makerId = 0x00000000;
+    for (size_t i = 0; i < 3; i++) {
+        uint8_t data = 0x00;
+        receive(pio, statemachineId, &data);
+        makerId |= data << ((2 - i) * 8);
+    }
+    // TODO: 本当はここでNACKしないといけない！
+
+    sleep_us(150);  // t_htss
+
+    // 結果を表示
+    printf("The maker-id of device: %06X\n", makerId);
     while (true) {
         sleep_ms(1000);
     }
@@ -71,9 +89,16 @@ bool resetDevice(PIO pio, uint statemachineId) {
     return pio_sm_get_blocking(pio, statemachineId) == 0;
 }
 
-bool sendCommand(PIO pio, uint statemachineId, uint8_t command) {
+bool send(PIO pio, uint statemachineId, uint8_t command) {
     pio_sm_put_blocking(pio, statemachineId, command);
-    return pio_sm_get_blocking(pio, statemachineId) == 0;
+    uint32_t result = pio_sm_get_blocking(pio, statemachineId);
+    return (result & 0x01) == 0;
+}
+
+void receive(PIO pio, uint statemachineId, uint8_t* data) {
+    pio_sm_put_blocking(pio, statemachineId, 0x00FFFFFF);
+    uint32_t result = pio_sm_get_blocking(pio, statemachineId);
+    *data = result & 0xFF;
 }
 
 int searchDevice(PIO pio, uint statemachineId) {
@@ -81,7 +106,7 @@ int searchDevice(PIO pio, uint statemachineId) {
     for (size_t i = 0; i < 8; i++) {
         sleep_us(150);  // t_htss
         uint32_t payload = (CommandManufacturerIDRead << 4) | (i << 1) | 1;
-        bool response = sendCommand(pio, statemachineId, payload);
+        bool response = send(pio, statemachineId, payload);
         sleep_us(150);  // t_htss
 
         if (response) {
