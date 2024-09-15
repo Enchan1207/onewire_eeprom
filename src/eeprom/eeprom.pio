@@ -1,85 +1,66 @@
 .program eeprom
+.side_set 1 pindirs
 
 ; インストラクション数削減のため、スタックにpushする値と操作とを規定する
 ;
 ; FFxxxxxx: EEPROMリセット
-; 00xxxxNN: NNh書き込み
-; 000002FF: 読み込み (ACK送信)
-; 000001FF: 読み込み (NACK送信)
+; 000000nn: nnh書き込み
+; 000001FF: 読み込み (ACK送信)
+; 000002FF: 読み込み (NACK送信)
 
 .wrap_target
-ready:
-    pull block
+    ready:
+    ; read command
+                pull block          side 0
 
-    set pindirs 1
+    ; if most-significant byte is not 0, reset eeprom
+                out x, 8            side 0
+                jmp x-- reset       side 0
 
-    ; 最上位バイトに値が入っている場合はリセットルーチンへ
-    out x, 8
-    jmp x-- eeprom_reset
+    ; the next of MSB indicates Read(>1) / Write(0)
+                out x, 16           side 0
 
-    ; 次の2バイトに値が入っている場合は読み出しモードとみなす(ここでは何もしない)
-    out x, 16
+    ; send or receive 8-bit data
+    send_loop:
+                out y, 1            side 1 [3]  ; pull down
+                jmp y-- send_1      side 1      ; wait 1.25us = 6cy to send "1"
+                set y, 4            side 1      ; wait 6.5us = 26cy to send "0"
+    send_0:     jmp y-- send_0      side 1 [3]
+    send_1:     nop                 side 0      ; pin will be pulled up by register
+                in pins, 1          side 0      ; read response from chip
 
-    ; 通信ループ OSRが空になるまで繰り返す
-    comm_loop:
-        out y, 1
+                set y, 2            side 0 [1]  ; wait 8.25us (t_rcv)
+    wait_c:     jmp y-- wait_c      side 0 [8]
 
-        ; Lに落とす
-        set pins 0
-        jmp y-- skip_t_low_0_wait
-        nop [18] ; ここで t_low0 を稼ぐ
-        skip_t_low_0_wait:
-            set pindirs 0
+                jmp !osre send_loop side 0
 
-        ; ISRに代入
-        in pins, 1 [28] ; ここで t_rcv を稼ぐ
+    ; read or write ACK/NACK
+                jmp x-- send_back   side 0      ; if x > 0 send back ACK or NACK
+                jmp read_ack        side 1      ; else read ACK
+    
+    ; if x == 2 send NACK else send ACK
+    send_back:  jmp x-- send_nack   side 1 [4]  ; wait 1.25us = 6cy to send NACK (1)
+                set y, 4            side 1      ; wait 6.5us = 26cy to send ACK (0)
+    send_ack:   jmp y-- send_ack    side 1 [3]
+    send_nack:  nop                 side 0      ; pin will be pulled up by register
 
-        set pindirs 1
-        jmp !osre comm_loop
+    ; push received data to FIFO, then return to top
+                jmp push_data       side 0
 
-    ; 読み込みモードならACKかNACKを出力する、書き込みモードならACKを確認する
-    set pins 0
-    jmp x-- write_ack_or_nack
-    jmp read_ack
+reset:
+                set x, 23           side 1      ; pull down
+    wait_a:     jmp x-- wait_a      side 1 [15] ; wait 96us (t_reset)
 
-    ; xが0ならNACK, 1ならACKを出力する
-    write_ack_or_nack:
-        jmp !x skip_nack_wait
-        nop [18] ; ここで t_low0 を稼ぐ
-        skip_nack_wait:
-            set pindirs 0
+                set x, 4            side 0      ; pin will be pulled up by register
+    wait_b:     jmp x-- wait_b      side 0 [7]  ; wait 10.25us (t_rrt)
 
-    ; ISRをFIFOにpushして最初に戻る
-    push noblock
-    jmp ready
+                nop                 side 1 [9]  ; wait 1.25us (t_drr)
 
-; リセットシーケンスを送るサブルーチン
-eeprom_reset:
-    ; リセットシーケンス:
-    ; Lにして96us待機 -> INにして10us待機 -> Lにして1~2us待機 -> Lが返れば成功
-
-    set pins 0
-
-    ; t_reset待機 ((9 + 1) * (31 + 1) = 10 * 32 = 320cy = 96us以上)
-    set x, 9
-    wait_for_t_reset:
-        jmp x-- wait_for_t_reset [31]
-
-    ; INに戻してt_rrt待機 (32cy, 10.49us以上)
-    set pindirs 0 [31]
-
-    ; Lにセットしてt_drr待機(1 + 4 = 5cy, 1.5us以上)
-    set pindirs 1
-    set pins 0 [3]
-    set x, 0
-
-    ; *fallthrough
-
-; ACKを確認するサブルーチン
 read_ack:
-    set pindirs 0
-    in pins, 1
-    push noblock
+                in pins, 1          side 0      ; read response from chip
+
+push_data:
+                push noblock        side 0
 .wrap
 
 % c-sdk {
@@ -99,12 +80,15 @@ void eeprom_program_init(PIO pio, uint sm, uint offset, uint pin) {
     // setで設定するピンのベースと数を設定
     sm_config_set_set_pins(&c, pin, 1);
 
+    // side-setで設定するピンのベースを設定
+    sm_config_set_sideset_pins(&c, pin);
+
     // inで取り込むピンのベースを設定
     sm_config_set_in_pins(&c, pin);
 
     // クロック設定
-    sm_config_set_clkdiv(&c, 34);       // 3.67MHz
-    // sm_config_set_clkdiv(&c, 1250);  // 100kHz(10us/cycle), for debug
+    sm_config_set_clkdiv_int_frac(&c, 31, 25);  // 4MHz, 250ns/cycle
+    // sm_config_set_clkdiv(&c, 1250); // 100kHz(10us/cycle), for debug
 
     pio_sm_init(pio, sm, offset, &c);
 }

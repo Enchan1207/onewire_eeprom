@@ -27,7 +27,7 @@ bool eepromSend(const EEPROM* eeprom, uint8_t command) {
 }
 
 void eepromReceive(const EEPROM* eeprom, uint8_t* data, bool keepAlive) {
-    pio_sm_put_blocking(eeprom->pio, eeprom->statemachineId, keepAlive ? 0x000002FF : 0x000001FF);
+    pio_sm_put_blocking(eeprom->pio, eeprom->statemachineId, keepAlive ? 0x1FF : 0x2FF);
     uint32_t result = pio_sm_get_blocking(eeprom->pio, eeprom->statemachineId);
     *data = result & 0xFF;
 }
