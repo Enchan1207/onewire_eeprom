@@ -1,11 +1,12 @@
 //
-// EEPROMドライバ
+// EEPROM
 //
 #ifndef EEPROM_H
 #define EEPROM_H
 
 #include <hardware/pio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /**
  * @brief EEPROMインスタンス
@@ -17,7 +18,7 @@ typedef struct {
 } EEPROM;
 
 /**
- * @brief EEPROMドライバを初期化する
+ * @brief EEPROMデバイスドライバを初期化する
  *
  * @param eeprom
  */
@@ -32,40 +33,49 @@ void eepromInitDriver(const EEPROM* eeprom);
 bool eepromResetDevice(const EEPROM* eeprom);
 
 /**
- * @brief EEPROMデバイスにコマンドを送信する
- *
- * @param eeprom
- * @param command
- * @return 送信結果
- */
-bool eepromSend(const EEPROM* eeprom, uint8_t command);
-
-/**
- * @brief EEPROMデバイスから応答を受信する
- *
- * @param eeprom
- * @param data
- * @param keepAlive falseに設定すると、データの受信を停止し、NACKをデバイスに送信します。
- */
-void eepromReceive(const EEPROM* eeprom, uint8_t* data, bool keepAlive);
-
-/**
- * @brief EEPROMデバイスから複数バイトの応答を受信する
- *
- * @param eeprom
- * @param data
- * @param length 受け取るデータの長さ
- *
- * @note 格納先(`data`)には長さ(`length`)分以上の領域が確保されていることを前提とします。
- */
-void eepromReceiveArray(const EEPROM* eeprom, uint8_t* data, uint8_t length);
-
-/**
  * @brief EEPROMデバイスを検索する
  *
  * @param eeprom
  * @return 検索できた場合はそのスレーブアドレスが、見つからなかった場合は-1が返ります。
  */
 int eepromSearchDevice(const EEPROM* eeprom);
+
+/**
+ * @brief EEPROMのメーカIDを取得する
+ *
+ * @param eeprom
+ * @param id
+ * @return 取得に失敗した場合はfalseが返ります。
+ */
+bool eepromQueryMakerId(const EEPROM* eeprom, uint32_t* id);
+
+/**
+ * @brief アクセス先のアドレスを指定する
+ *
+ * @param eeprom
+ * @param address
+ * @return 指定に失敗した場合はfalseが返ります。
+ */
+bool eepromSetAddress(const EEPROM* eeprom, uint8_t address);
+
+/**
+ * @brief アドレスと値を指定して書き込み
+ *
+ * @param eeprom
+ * @param address
+ * @param data
+ * @return 書き込みに失敗した場合はfalseが返ります。
+ */
+bool eepromWriteByte(const EEPROM* eeprom, uint8_t address, uint8_t data);
+
+/**
+ * @brief アドレスを指定してランダム読み出し
+ *
+ * @param eeprom
+ * @param address
+ * @param value
+ * @return アクセスに失敗した場合はfalseが返ります。
+ */
+bool eepromReadRandom(const EEPROM* eeprom, uint8_t address, uint8_t* value);
 
 #endif /* EEPROM_H */

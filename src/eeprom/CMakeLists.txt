@@ -8,6 +8,7 @@ pico_generate_pio_header(eeprom
 
 target_sources(eeprom PRIVATE
     driver.c
+    util.c
 )
 target_include_directories(eeprom PRIVATE
     ${PROJECT_SOURCE_DIR}/include
