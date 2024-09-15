@@ -1,10 +1,7 @@
-//
-// ユーティリティ
-//
 #include <pico/stdlib.h>
 
+#include "driver.h"
 #include "eeprom.h"
-#include "eeprom_driver.h"
 
 void eepromInitDriver(const EEPROM* eeprom) {
     eepromInitStateMachine(eeprom);
