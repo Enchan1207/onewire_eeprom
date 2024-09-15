@@ -37,33 +37,37 @@ int main() {
     printf("\n");
     sleep_us(150);  // t_htss
 
+    // データの読み出しを試みる
+    printf("Try to read data from first address\n");
+    sleep_us(150);  // t_htss
+    if (!eepromSend(eeprom, 0xA1)) {
+        printf("Failed to set device address.\n");
+        return 1;
+    }
+    uint8_t currentAddress = 0x55;
+    eepromReceive(eeprom, &currentAddress, false);
+    sleep_us(150);  // t_htss
+    printf("Stored data: %02X\n", currentAddress);
+
     // 書き込みアドレス指定
+    const uint8_t writeDestination = 0x00;
+    printf("Try to specify destination to %02X...\n", writeDestination);
     sleep_us(150);  // t_htss
     eepromSend(eeprom, 0xA0);
-    if (!eepromSend(eeprom, 0x00)) {
+    if (!eepromSend(eeprom, writeDestination)) {
         printf("Failed to specify address.\n");
         return 1;
     }
 
     // 値を書き込む
-    if (!eepromSend(eeprom, 0xC7)) {
+    const uint8_t writeValue = 0xAC;
+    if (!eepromSend(eeprom, writeValue)) {
         printf("Failed to write.\n");
         return 1;
     }
     sleep_us(150);  // t_htss
+    printf("%02X was written.\n", writeValue);
 
-    // 読み出しアドレス指定
-    sleep_us(150);  // t_htss
-    eepromSend(eeprom, 0xA0);
-    eepromSend(eeprom, 0x00);
-    eepromSend(eeprom, 0xA1);
-    uint8_t storedData = 0x00;
-    eepromReceive(eeprom, &storedData, false);
-    sleep_us(150);  // t_htss
-
-    printf("Stored data: %02X\n", storedData);
-
-    // 結果を表示
     while (true) {
         sleep_ms(1000);
     }
