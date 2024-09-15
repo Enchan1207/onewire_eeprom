@@ -93,6 +93,8 @@ bool eepromReadRandom(const EEPROM* eeprom, uint8_t address, uint8_t* value) {
         return false;
     }
 
+    sleep_us(150);
+
     // 読み出し
     if (!eepromSend(eeprom, 0xA1)) {
         sleep_us(150);
