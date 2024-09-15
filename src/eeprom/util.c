@@ -84,6 +84,29 @@ bool eepromWriteByte(const EEPROM* eeprom, uint8_t address, uint8_t data) {
     return true;
 }
 
+size_t eepromWritePage(const EEPROM* eeprom, uint8_t page, const uint8_t* data, size_t length) {
+    sleep_us(150);
+
+    // 書き込み先を指定
+    if (!setAddress(eeprom, page << 3)) {
+        sleep_us(150);
+        return 0;
+    }
+
+    // 書き込み
+    size_t writtenBytes = 0;
+    while (writtenBytes < length) {
+        // 途中で失敗したら抜ける
+        if (!eepromSend(eeprom, data[writtenBytes])) {
+            break;
+        }
+        writtenBytes++;
+    }
+
+    sleep_us(150);
+    return writtenBytes;
+}
+
 bool eepromReadRandom(const EEPROM* eeprom, uint8_t address, uint8_t* value) {
     sleep_us(150);
 
@@ -104,4 +127,32 @@ bool eepromReadRandom(const EEPROM* eeprom, uint8_t address, uint8_t* value) {
 
     sleep_us(150);
     return true;
+}
+
+bool eepromReadSequential(const EEPROM* eeprom, uint8_t address, uint8_t* data, size_t length) {
+    sleep_us(150);
+
+    // 読み出し元を指定
+    if (!setAddress(eeprom, address)) {
+        sleep_us(150);
+        return false;
+    }
+
+    sleep_us(150);
+
+    // 読み出し
+    if (!eepromSend(eeprom, 0xA1)) {
+        sleep_us(150);
+        return false;
+    }
+
+    // 連続で読み出しを続ける
+    size_t readBytes = 0;
+    while (readBytes < length) {
+        eepromReceive(eeprom, data + readBytes, readBytes < (length - 1));
+        readBytes++;
+    }
+
+    sleep_us(150);
+    return readBytes;
 }

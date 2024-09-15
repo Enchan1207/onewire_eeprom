@@ -69,6 +69,17 @@ bool eepromSetAddress(const EEPROM* eeprom, uint8_t address);
 bool eepromWriteByte(const EEPROM* eeprom, uint8_t address, uint8_t data);
 
 /**
+ * @brief ページ書き込み(最大8byteを同時書き込み)
+ *
+ * @param eeprom
+ * @param page ページ番号(0x00~0x0F)
+ * @param data 書き込みデータへのポインタ
+ * @param length dataの長さ (最大8)
+ * @return 書き込めたバイト数
+ */
+size_t eepromWritePage(const EEPROM* eeprom, uint8_t page, const uint8_t* data, size_t length);
+
+/**
  * @brief アドレスを指定してランダム読み出し
  *
  * @param eeprom
@@ -77,5 +88,16 @@ bool eepromWriteByte(const EEPROM* eeprom, uint8_t address, uint8_t data);
  * @return アクセスに失敗した場合はfalseが返ります。
  */
 bool eepromReadRandom(const EEPROM* eeprom, uint8_t address, uint8_t* value);
+
+/**
+ * @brief アドレスを指定してシーケンシャル読み出し
+ *
+ * @param eeprom
+ * @param address
+ * @param data 格納先
+ * @param length 読み出すデータ長
+ * @return アクセスに失敗した場合はfalseが返ります。
+ */
+bool eepromReadSequential(const EEPROM* eeprom, uint8_t address, uint8_t* data, size_t length);
 
 #endif /* EEPROM_H */
