@@ -1,10 +1,10 @@
 //
 // ドライバ
 //
+#include <eeprom.pio.h>
 #include <hardware/pio.h>
 #include <pico/stdlib.h>
 
-#include "eeprom.pio.h"
 #include "eeprom_driver.h"
 
 void eepromInitStateMachine(const EEPROM* eeprom) {
