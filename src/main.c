@@ -26,44 +26,33 @@ int main() {
     }
 
     // メーカーIDの取得
-    uint8_t makerId[3] = {0};
-    sleep_us(150);  // t_htss
-    eepromSend(eeprom, 0xC1);
-    eepromReceiveArray(eeprom, makerId, 3);
-    printf("The maker-id of device: ", makerId);
-    for (size_t i = 0; i < 3; i++) {
-        printf("%02X", makerId[i]);
-    }
-    printf("\n");
-    sleep_us(150);  // t_htss
-
-    // 書き込みアドレス指定
-    sleep_us(150);  // t_htss
-    eepromSend(eeprom, 0xA0);
-    if (!eepromSend(eeprom, 0x00)) {
-        printf("Failed to specify address.\n");
+    uint32_t makerId = 0;
+    if (!eepromQueryMakerId(eeprom, &makerId)) {
+        printf("Failed to query maker ID\n");
         return 1;
     }
+    printf("Maker id of connected device: %06X\n", makerId);
 
-    // 値を書き込む
-    if (!eepromSend(eeprom, 0xC7)) {
+    // ランダムリード
+    printf("Try to read data from first address\n");
+    uint8_t address = 0x00;
+    uint8_t data = 0;
+    if (!eepromReadRandom(eeprom, address, &data)) {
+        printf("Failed to read.\n");
+        return 1;
+    }
+    printf("Stored data @ %02X: %02X\n", address, data);
+
+    // シングルライト
+    uint8_t writeData = data ^ 0x55;
+    printf("Try to write %02X to %02X\n", writeData, address);
+    if (!eepromWriteByte(eeprom, address, writeData)) {
         printf("Failed to write.\n");
         return 1;
     }
-    sleep_us(150);  // t_htss
 
-    // 読み出しアドレス指定
-    sleep_us(150);  // t_htss
-    eepromSend(eeprom, 0xA0);
-    eepromSend(eeprom, 0x00);
-    eepromSend(eeprom, 0xA1);
-    uint8_t storedData = 0x00;
-    eepromReceive(eeprom, &storedData, false);
-    sleep_us(150);  // t_htss
+    printf("Finished.\n");
 
-    printf("Stored data: %02X\n", storedData);
-
-    // 結果を表示
     while (true) {
         sleep_ms(1000);
     }
