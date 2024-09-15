@@ -16,6 +16,7 @@ int main() {
     er.pio = pio0;
     er.statemachineId = 0;
     er.gpio = 14;
+    er.deviceAddress = 0;
     eeprom = &er;
     eepromInitDriver(eeprom);
 

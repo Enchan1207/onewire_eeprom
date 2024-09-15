@@ -1,5 +1,6 @@
 #include <pico/stdlib.h>
 
+#include "commands.h"
 #include "driver.h"
 #include "eeprom.h"
 
@@ -15,8 +16,7 @@ int eepromSearchDevice(const EEPROM* eeprom) {
     int deviceAddress = -1;
     for (uint8_t i = 0; i < 8; i++) {
         sleep_us(150);  // t_htss
-        uint32_t payload = (0x0C << 4) | (i << 1) | 1;
-        bool response = eepromSend(eeprom, payload);
+        bool response = eepromSend(eeprom, buildPayload(CommandReadManufacturerId, eeprom->deviceAddress, true));
         sleep_us(150);  // t_htss
 
         if (response) {
@@ -30,7 +30,7 @@ int eepromSearchDevice(const EEPROM* eeprom) {
 bool eepromQueryMakerId(const EEPROM* eeprom, uint32_t* id) {
     uint32_t queriedId = 0;
     sleep_us(150);  // t_htss
-    if (!eepromSend(eeprom, 0xC1)) {
+    if (!eepromSend(eeprom, buildPayload(CommandReadManufacturerId, eeprom->deviceAddress, true))) {
         sleep_us(150);
         return false;
     }
@@ -46,20 +46,13 @@ bool eepromQueryMakerId(const EEPROM* eeprom, uint32_t* id) {
 }
 
 static bool setAddress(const EEPROM* eeprom, uint8_t address) {
-    if (!eepromSend(eeprom, 0xA0)) {
+    if (!eepromSend(eeprom, buildPayload(CommandAccessMainMemory, eeprom->deviceAddress, false))) {
         return false;
     }
     if (!eepromSend(eeprom, address)) {
         return false;
     }
     return true;
-}
-
-bool eepromSetAddress(const EEPROM* eeprom, uint8_t address) {
-    sleep_us(150);
-    bool result = setAddress(eeprom, address);
-    sleep_us(150);
-    return result;
 }
 
 bool eepromWriteByte(const EEPROM* eeprom, uint8_t address, uint8_t data) {
@@ -116,7 +109,7 @@ bool eepromReadRandom(const EEPROM* eeprom, uint8_t address, uint8_t* value) {
     sleep_us(150);
 
     // 読み出し
-    if (!eepromSend(eeprom, 0xA1)) {
+    if (!eepromSend(eeprom, buildPayload(CommandAccessMainMemory, eeprom->deviceAddress, true))) {
         sleep_us(150);
         return false;
     }
@@ -138,7 +131,7 @@ bool eepromReadSequential(const EEPROM* eeprom, uint8_t address, uint8_t* data, 
     sleep_us(150);
 
     // 読み出し
-    if (!eepromSend(eeprom, 0xA1)) {
+    if (!eepromSend(eeprom, buildPayload(CommandAccessMainMemory, eeprom->deviceAddress, true))) {
         sleep_us(150);
         return false;
     }
