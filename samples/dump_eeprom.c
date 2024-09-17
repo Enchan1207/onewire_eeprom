@@ -1,5 +1,5 @@
 //
-// Single-Wire EEPROM AT21CS01 を触ってみる
+// Sample program: dump all stored data
 //
 #include <hardware/pio.h>
 #include <pico/stdlib.h>
@@ -32,29 +32,28 @@ int main() {
         printf("Failed to query maker ID\n");
         return 1;
     }
-    printf("Maker id of connected device: %06X\n", makerId);
+    printf("Maker ID: %06X\n", makerId);
 
-    // ランダムリード
-    printf("Try to read data from first address\n");
-    uint8_t address = 0x00;
-    uint8_t data = 0;
-    if (!eepromReadRandom(eeprom, address, &data)) {
-        printf("Failed to read.\n");
-        return 1;
-    }
-    printf("Stored data @ %02X: %02X\n", address, data);
+    // ページごとにメモリをダンプ
+    printf("Dump stored data...\n");
+    const uint8_t pageSize = 8;
+    const size_t memoryBitsCapacity = 1024;
+    const size_t nPages = memoryBitsCapacity / 8 / pageSize;
+    for (size_t pageIndex = 0; pageIndex < nPages; pageIndex++) {
+        uint8_t startAddress = pageIndex * pageSize;
+        uint8_t page[pageSize];
+        if (!eepromReadSequential(eeprom, startAddress, page, pageSize)) {
+            printf("\n\n***Failed to read from address %02X. aborting\n", startAddress);
+            break;
+        }
+        printf("%02Xh: ", startAddress);
 
-    // シングルライト
-    uint8_t writeData = data ^ 0x55;
-    printf("Try to write %02X to %02X\n", writeData, address);
-    if (!eepromWriteByte(eeprom, address, writeData)) {
-        printf("Failed to write.\n");
-        return 1;
+        for (size_t i = 0; i < pageSize; i++) {
+            printf("%02X ", page[i]);
+        }
+        printf("\n");
     }
 
     printf("Finished.\n");
-
-    while (true) {
-        sleep_ms(1000);
-    }
+    return 0;
 }
