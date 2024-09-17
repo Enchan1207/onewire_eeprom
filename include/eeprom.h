@@ -8,13 +8,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/**
- * @brief EEPROMインスタンス
- */
+/** EEPROMインスタンス */
 typedef struct {
     PIO pio;
     uint statemachineId;
+
+    /** 通信に使用するGPIOのピン番号 */
     uint gpio;
+
+    /** EEPROMのデバイスアドレス */
+    uint8_t deviceAddress;
 } EEPROM;
 
 /**
@@ -48,15 +51,6 @@ int eepromSearchDevice(const EEPROM* eeprom);
  * @return 取得に失敗した場合はfalseが返ります。
  */
 bool eepromQueryMakerId(const EEPROM* eeprom, uint32_t* id);
-
-/**
- * @brief アクセス先のアドレスを指定する
- *
- * @param eeprom
- * @param address
- * @return 指定に失敗した場合はfalseが返ります。
- */
-bool eepromSetAddress(const EEPROM* eeprom, uint8_t address);
 
 /**
  * @brief アドレスと値を指定して書き込み

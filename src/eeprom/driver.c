@@ -15,8 +15,8 @@ bool eepromReset(const EEPROM* eeprom) {
     return pio_sm_get_blocking(eeprom->pio, eeprom->statemachineId) == 0;
 }
 
-bool eepromSend(const EEPROM* eeprom, uint8_t command) {
-    pio_sm_put_blocking(eeprom->pio, eeprom->statemachineId, command);
+bool eepromSend(const EEPROM* eeprom, uint8_t payload) {
+    pio_sm_put_blocking(eeprom->pio, eeprom->statemachineId, payload);
     uint32_t result = pio_sm_get_blocking(eeprom->pio, eeprom->statemachineId);
     return (result & 0x01) == 0;
 }
@@ -25,10 +25,4 @@ void eepromReceive(const EEPROM* eeprom, uint8_t* data, bool keepAlive) {
     pio_sm_put_blocking(eeprom->pio, eeprom->statemachineId, keepAlive ? 0x1FF : 0x2FF);
     uint32_t result = pio_sm_get_blocking(eeprom->pio, eeprom->statemachineId);
     *data = result & 0xFF;
-}
-
-void eepromReceiveArray(const EEPROM* eeprom, uint8_t* data, uint8_t length) {
-    for (size_t i = 0; i < length; i++) {
-        eepromReceive(eeprom, data + i, i < (length - 1));
-    }
 }

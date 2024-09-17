@@ -25,13 +25,13 @@ void eepromInitStateMachine(const EEPROM* eeprom);
 bool eepromReset(const EEPROM* eeprom);
 
 /**
- * @brief EEPROMデバイスにコマンドを送信する
+ * @brief EEPROMデバイスにペイロードを送信する
  *
  * @param eeprom
- * @param command
+ * @param payload
  * @return 送信結果
  */
-bool eepromSend(const EEPROM* eeprom, uint8_t command);
+bool eepromSend(const EEPROM* eeprom, uint8_t payload);
 
 /**
  * @brief EEPROMデバイスから応答を受信する
@@ -41,16 +41,5 @@ bool eepromSend(const EEPROM* eeprom, uint8_t command);
  * @param keepAlive falseに設定すると、データの受信を停止し、NACKをデバイスに送信します。
  */
 void eepromReceive(const EEPROM* eeprom, uint8_t* data, bool keepAlive);
-
-/**
- * @brief EEPROMデバイスから複数バイトの応答を受信する
- *
- * @param eeprom
- * @param data
- * @param length 受け取るデータの長さ
- *
- * @note 格納先(`data`)には長さ(`length`)分以上の領域が確保されていることを前提とします。
- */
-void eepromReceiveArray(const EEPROM* eeprom, uint8_t* data, uint8_t length);
 
 #endif /* EEPROM_DRIVER_H */
