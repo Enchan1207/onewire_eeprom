@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.21)
 # load pico-sdk
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
-project(pico_project_example
+project(singlewire_eeprom
     VERSION 0.1.0
     DESCRIPTION "Single-Wire Interface (SWI) EEPROM driver library"
     LANGUAGES C CXX ASM
@@ -29,6 +29,11 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 endif()
 
 option(SWI_EEPROM_BUILD_SAMPLES "Build stand-alone samples" OFF)
+
+install(
+    DIRECTORY ${swi_eeprom_SOURCE_DIR}/include/swi_eeprom
+    DESTINATION include
+)
 
 add_subdirectory(src)
 
