@@ -2,7 +2,6 @@
 
 #include <driver.pio.h>
 #include <hardware/pio.h>
-#include <pico/stdlib.h>
 
 void eepromInitStateMachine(const EEPROM* eeprom) {
     uint offset = pio_add_program(eeprom->pio, &eeprom_program);

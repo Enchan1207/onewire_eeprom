@@ -14,5 +14,6 @@ target_compile_options(dump_eeprom PRIVATE
 target_link_libraries(dump_eeprom
     pico_stdlib
     swi_eeprom
+    hardware_pio
 )
 pico_add_extra_outputs(dump_eeprom)
