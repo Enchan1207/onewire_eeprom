@@ -10,13 +10,13 @@ target_sources(swi_eeprom PRIVATE
     driver.c
     util.c
 )
-target_include_directories(swi_eeprom PRIVATE
+target_include_directories(swi_eeprom PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
 target_compile_options(swi_eeprom PRIVATE
     -Wall
 )
-target_link_libraries(swi_eeprom PRIVATE
+target_link_libraries(swi_eeprom PUBLIC
     pico_stdlib
     hardware_pio
 )

@@ -30,11 +30,6 @@ endif()
 
 option(SWI_EEPROM_BUILD_SAMPLES "Build stand-alone samples" OFF)
 
-install(
-    DIRECTORY ${swi_eeprom_SOURCE_DIR}/include/swi_eeprom
-    DESTINATION include
-)
-
 add_subdirectory(src)
 
 if(SWI_EEPROM_BUILD_SAMPLES)
