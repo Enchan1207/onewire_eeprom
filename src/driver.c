@@ -1,6 +1,6 @@
 #include "driver.h"
 
-#include <eeprom.pio.h>
+#include <driver.pio.h>
 #include <hardware/pio.h>
 #include <pico/stdlib.h>
 

@@ -7,7 +7,7 @@
 #include <hardware/pio.h>
 #include <stdbool.h>
 
-#include "eeprom.h"
+#include "swi_eeprom/eeprom.h"
 
 /**
  * @brief EEPROMと通信するPIOステートマシンを初期化する

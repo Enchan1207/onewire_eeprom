@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "eeprom.h"
+#include "swi_eeprom/eeprom.h"
 
 int main() {
     stdio_init_all();

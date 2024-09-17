@@ -30,4 +30,10 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-maybe-uninitialized)
 endif()
 
+option(SWI_EEPROM_BUILD_SAMPLES "Build stand-alone samples" OFF)
+
 add_subdirectory(src)
+
+if(SWI_EEPROM_BUILD_SAMPLES)
+    add_subdirectory(samples)
+endif()
