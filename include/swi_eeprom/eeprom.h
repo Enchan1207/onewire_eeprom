@@ -1,5 +1,5 @@
 //
-// EEPROM
+// Single-Wire Interface EEPROM driver
 //
 #ifndef EEPROM_H
 #define EEPROM_H

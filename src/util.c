@@ -2,7 +2,7 @@
 
 #include "commands.h"
 #include "driver.h"
-#include "eeprom.h"
+#include "swi_eeprom/eeprom.h"
 
 void eepromInitDriver(const EEPROM* eeprom) {
     eepromInitStateMachine(eeprom);

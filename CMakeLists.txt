@@ -1,16 +1,14 @@
 #
-# CMake project template for Raspberry Pi Pico
-#
-# reference: https://github.com/raspberrypi/pico-examples/blob/master/CMakeLists.txt
+# Single-Wire Interface EEPROM driver for Raspberry Pi Pico
 #
 cmake_minimum_required(VERSION 3.21)
 
-# # load pico-sdk
+# load pico-sdk
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
-project(pico_project_example
+project(singlewire_eeprom
     VERSION 0.1.0
-    DESCRIPTION "CMake project template for Raspberry Pi Pico"
+    DESCRIPTION "Single-Wire Interface (SWI) EEPROM driver library"
     LANGUAGES C CXX ASM
 )
 
@@ -30,4 +28,10 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-maybe-uninitialized)
 endif()
 
+option(SWI_EEPROM_BUILD_SAMPLES "Build stand-alone samples" OFF)
+
 add_subdirectory(src)
+
+if(SWI_EEPROM_BUILD_SAMPLES)
+    add_subdirectory(samples)
+endif()

@@ -1,14 +1,12 @@
-# Raspberry Pi Pico project template for C/C++ with CMake
+# Single-Wire EEPROM driver for Raspberry Pi Pico
 
 ## Overview
 
-*Template content*
+Raspberry Pi Picoで Single-Wire Interface EEPROM [AT21CS01](https://www.microchip.com/en-us/product/at21cs01) を扱うためのライブラリ。
 
-This is template repository for Raspberry Pi Pico.
-It contains:
+## Usage
 
-- CMake support
-    - Assumed you will use [pico-SDK](https://www.raspberrypi.com/documentation/microcontrollers/c_sdk.html)
+under construction...
 
 ## License
 
