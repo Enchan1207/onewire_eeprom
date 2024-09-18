@@ -36,11 +36,22 @@ int main() {
     printf("Maker ID: %06X\n", makerId);
 
     // データ書き込み
-    printf("Write dummy data...\n");
+    printf("Write dummy data");
+    const uint8_t pageSize = 8;
     const char string[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
-    for (size_t i = 0; i < sizeof(string); i++) {
-        eepromWriteByte(eeprom, i, string[i]);
+    for (size_t i = 0; i < sizeof(string); i += pageSize) {
+        // 効率化のため8byte=1pageずつ書き込む
+        const uint8_t pageIndex = i >> 3;
+        if (!eepromWritePage(eeprom, pageIndex, (const uint8_t*)(string + i), pageSize)) {
+            printf("\nFailed to write at page %02X.\n", pageIndex);
+            break;
+        }
+
+        // 書き込みサイクル時間待機
+        printf(".");
+        sleep_ms(5);
     }
+    printf("\n");
 
     printf("Finished.\n");
     return 0;

@@ -67,7 +67,5 @@ int main() {
 
         printf("\n");
     }
-
-    printf("Finished.\n");
     return 0;
 }
