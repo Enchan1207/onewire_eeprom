@@ -1,6 +1,7 @@
 //
 // Sample program: dump all stored data
 //
+#include <ctype.h>
 #include <hardware/pio.h>
 #include <pico/stdlib.h>
 #include <stdint.h>
@@ -48,9 +49,22 @@ int main() {
         }
         printf("%02Xh: ", startAddress);
 
+        // hex dump
         for (size_t i = 0; i < pageSize; i++) {
-            printf("%02X ", page[i]);
+            printf("%02X", page[i]);
         }
+
+        printf(" | ");
+
+        // ascii dump
+        for (size_t i = 0; i < pageSize; i++) {
+            if (!isprint(page[i])) {
+                printf(".");
+                continue;
+            }
+            printf("%c", page[i]);
+        }
+
         printf("\n");
     }
 
