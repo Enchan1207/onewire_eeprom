@@ -45,6 +45,38 @@ bool eepromQueryMakerId(const EEPROM* eeprom, uint32_t* id) {
     return true;
 }
 
+bool eepromQuerySerialNumber(const EEPROM* eeprom, uint64_t* id) {
+    uint64_t queriedId = 0;
+    sleep_us(150);  // t_htss
+
+    // セキュリティレジスタのアドレスを設定
+    if (!eepromSend(eeprom, buildPayload(CommandAccessSecurityRegister, eeprom->deviceAddress, false))) {
+        sleep_us(150);
+        return false;
+    }
+    if (!eepromSend(eeprom, 0x00)) {
+        sleep_us(150);
+        return false;
+    }
+
+    sleep_us(150);  // t_htss
+
+    if (!eepromSend(eeprom, buildPayload(CommandAccessSecurityRegister, eeprom->deviceAddress, true))) {
+        sleep_us(150);
+        return false;
+    }
+
+    uint8_t data = 0;
+    for (size_t i = 0; i < 8; i++) {
+        eepromReceive(eeprom, &data, i < 7);
+        queriedId = queriedId << 8 | data;
+    }
+
+    sleep_us(150);  // t_htss
+    *id = queriedId;
+    return true;
+}
+
 static bool setAddress(const EEPROM* eeprom, uint8_t address) {
     if (!eepromSend(eeprom, buildPayload(CommandAccessMainMemory, eeprom->deviceAddress, false))) {
         return false;

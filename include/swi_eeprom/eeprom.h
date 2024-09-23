@@ -53,6 +53,15 @@ int eepromSearchDevice(const EEPROM* eeprom);
 bool eepromQueryMakerId(const EEPROM* eeprom, uint32_t* id);
 
 /**
+ * @brief EEPROMのシリアル番号を取得する
+ *
+ * @param eeprom
+ * @param id
+ * @return 取得に失敗した場合はfalseが返ります。
+ */
+bool eepromQuerySerialNumber(const EEPROM* eeprom, uint64_t* id);
+
+/**
  * @brief アドレスと値を指定して書き込み
  *
  * @param eeprom
