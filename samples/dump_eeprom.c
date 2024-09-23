@@ -4,10 +4,42 @@
 #include <ctype.h>
 #include <hardware/pio.h>
 #include <pico/stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 
 #include "swi_eeprom/eeprom.h"
+
+/** ビット列を反転する */
+uint8_t reversed(uint8_t n) {
+    uint8_t source = n;
+    uint8_t result = 0;
+    for (int i = 7; i >= 0; i--) {
+        result <<= 1;
+        result |= source & 1;
+        source >>= 1;
+    }
+    return result;
+}
+
+/** シリアルナンバーのCRCを照合する */
+bool validateSerialNumber(uint64_t value, uint8_t expected) {
+    const uint8_t polynomial = 0x31;  // CRC-8 Maxim
+    uint8_t result = 0;
+    for (int i = 48; i >= 0; i -= 8) {
+        uint8_t byte = reversed((value >> i) & 0xFF);
+        result ^= byte;
+
+        for (int j = 0; j < 8; ++j) {
+            if (result & 0x80) {
+                result = (result << 1) ^ polynomial;
+            } else {
+                result <<= 1;
+            }
+        }
+    }
+    return reversed(result) == expected;
+}
 
 int main() {
     stdio_init_all();
@@ -34,6 +66,15 @@ int main() {
         return 1;
     }
     printf("Maker ID: %06X\n", makerId);
+
+    // シリアル番号の取得
+    uint64_t serialNumber = 0;
+    if (!eepromQuerySerialNumber(eeprom, &serialNumber)) {
+        printf("Failed to query serial number\n");
+        return 1;
+    }
+    bool isValidSerial = validateSerialNumber(serialNumber >> 8, serialNumber & 0xFF);
+    printf("Serial number: %016llX (CRC: %s)\n", serialNumber, isValidSerial ? "PASS" : "FAIL");
 
     // ページごとにメモリをダンプ
     printf("Dump stored data...\n");
